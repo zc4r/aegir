@@ -1,0 +1,60 @@
+me: Build and Deploy Ægir
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install deps
+        run: npm ci || true
+
+      - name: Build Ægir pipeline
+        env:
+          LEFT_URL: ${{ secrets.LEFT_URL }}
+          RIGHT_URL: ${{ secrets.RIGHT_URL }}
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y ffmpeg
+          make deploy
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup SSH key
+        uses: webfactory/ssh-agent@v0.8.1
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - name: Rsync build to server
+        env:
+          SERVER_USER: ${{ secrets.SERVER_USER }}
+          SERVER_HOST: ${{ secrets.SERVER_HOST }}
+          REMOTE_DIR: ${{ secrets.REMOTE_DIR }}
+        run: |
+          rsync -avz --delete build/ "${SERVER_USER}@${SERVER_HOST}:${REMOTE_DIR}/build/"
+          rsync -avz --delete assets/ "${SERVER_USER}@${SERVER_HOST}:${REMOTE_DIR}/assets/"
+
+      - name: Restart remote service
+        env:
+          SERVER_USER: ${{ secrets.SERVER_USER }}
+          SERVER_HOST: ${{ secrets.SERVER_HOST }}
+          REMOTE_DIR: ${{ secrets.REMOTE_DIR }}
+        run: |
+          ssh "${SERVER_USER}@${SERVER_HOST}" "service aegir_ws restart || (cd ${REMOTE_DIR} && node ws_server.js 8080 &)"
+

@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Card Half Slide</title>
+<style>
+  :root{
+    --w:360px;
+    --h:360px;
+    --dur:450ms;
+    --crimson:#2a0006; /* deep oily crimson matte */
+  }
+
+  body{
+    background:#0b0b0b;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    min-height:100vh;
+    margin:0;
+    font-family:system-ui,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+  }
+
+  .card-wrap{
+    width:var(--w);
+    height:var(--h);
+    position:relative;
+    border-radius:12px;
+    overflow:hidden;
+    box-shadow:0 10px 30px rgba(0,0,0,.7);
+    border:1px solid rgba(255,255,255,.04);
+    user-select:none;
+  }
+
+  /* deep matte layer revealed beneath */
+  .matte{
+    position:absolute;
+    inset:0;
+    background: linear-gradient(180deg, rgba(40,0,6,1) 0%, var(--crimson) 60%, #0b0001 100%);
+    z-index:0;
+  }
+
+  /* right half sits above matte */
+  .half.right{
+    position:absolute;
+    top:0;
+    right:0;
+    width:50%;
+    height:100%;
+    background-size:cover;
+    background-position:right center;
+    z-index:1;
+    transition:filter var(--dur) ease;
+  }
+
+  /* left half sits above right half */
+  .half.left{
+    position:absolute;
+    top:0;
+    left:0;
+    width:50%;
+    height:100%;
+    background-size:cover;
+    background-position:left center;
+    z-index:2;
+    transition:transform var(--dur) cubic-bezier(.2,.9,.3,1), box-shadow var(--dur);
+    will-change:transform;
+    cursor:pointer;
+  }
+
+  /* when active, left half slides fully over right half */
+  .card-wrap.active .half.left{
+    transform:translateX(100%);
+    box-shadow:-20px 0 40px rgba(0,0,0,.6);
+  }
+
+  /* subtle darken of right half when covered */
+  .card-wrap.active .half.right{
+    filter:brightness(.6) saturate(.9);
+  }
+
+  /* small visual handle on left half so user sees it's clickable */
+  .handle{
+    position:absolute;
+    left:8px;
+    top:50%;
+    transform:translateY(-50%);
+    width:28px;
+    height:56px;
+    border-radius:6px;
+    background:linear-gradient(180deg, rgba(255,255,255,.06), rgba(0,0,0,.2));
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.02);
+    z-index:3;
+    pointer-events:none;
+  }
+
+  /* accessible focus outline when toggled via keyboard */
+  .half.left:focus{
+    outline:3px solid rgba(255,255,255,.12);
+    outline-offset:3px;
+  }
+
+  /* responsive */
+  @media (max-width:420px){
+    :root{ --w:300px; --h:300px; }
+  }
+</style>
+</head>
+<body>
+  <div class="card-wrap" id="card">
+    <div class="matte" aria-hidden="true"></div>
+
+    <!-- Right half: replace RIGHT_IMAGE with your downloaded right-half file/path -->
+    <div class="half right" id="rightHalf" role="img" aria-label="Right half"
+         style="background-image: url('RIGHT_IMAGE');"></div>
+
+    <!-- Left half: replace LEFT_IMAGE with your downloaded left-half file/path -->
+    <div class="half left" id="leftHalf" role="button" tabindex="0" aria-pressed="false"
+         aria-label="Left half toggle" style="background-image: url('LEFT_IMAGE');">
+      <div class="handle" aria-hidden="true"></div>
+    </div>
+  </div>
+
+<script>
+  (function(){
+    const card = document.getElementById('card');
+    const left = document.getElementById('leftHalf');
+
+    // Toggle on click
+    left.addEventListener('click', toggle);
+    // Keyboard accessibility: Enter or Space toggles
+    left.addEventListener('keydown', (e) => {
+      if(e.key === 'Enter' || e.key === ' '){
+        e.preventDefault();
+        toggle();
+      }
+    });
+
+    function toggle(){
+      const active = card.classList.toggle('active');
+      left.setAttribute('aria-pressed', String(active));
+    }
+
+    // Optional: prevent text/image dragging
+    document.querySelectorAll('img').forEach(i => i.draggable = false);
+  })();
+</script>
+</body>
+</html>
+
